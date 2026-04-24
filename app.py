@@ -2,24 +2,31 @@ from flask import Flask, render_template, request, redirect, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import os
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
 
-# ---------------- DATABASE CONFIG ----------------
+# ================= SECRET KEY =================
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+# ================= DATABASE CONFIG =================
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Fix for Render PostgreSQL (important)
+if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
 
 db = SQLAlchemy(app)
 
-# ---------------- MODELS ----------------
+# ================= MODELS =================
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default="user")
+
 
 class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -30,17 +37,13 @@ class Ticket(db.Model):
     status = db.Column(db.String(50), default="Open")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ---------------- SAFE DB INIT ----------------
-
-def init_db():
-    with app.app_context():
-        db.create_all()
-
-# ---------------- ROUTES ----------------
+# ================= HOME =================
 
 @app.route("/")
 def home():
     return render_template("index.html")
+
+# ================= REGISTER =================
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -66,6 +69,8 @@ def register():
 
     return render_template("register.html")
 
+# ================= LOGIN =================
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
@@ -85,6 +90,8 @@ def login():
 
     return render_template("login.html", error=error)
 
+# ================= DASHBOARD =================
+
 @app.route("/dashboard")
 def dashboard():
     if "user_id" not in session:
@@ -92,25 +99,29 @@ def dashboard():
 
     return render_template("dashboard.html", username=session["username"])
 
+# ================= CREATE TICKET =================
+
 @app.route("/create_ticket", methods=["GET", "POST"])
 def create_ticket():
     if "user_id" not in session:
         return redirect("/login")
 
     if request.method == "POST":
-        new_ticket = Ticket(
+        ticket = Ticket(
             user_id=session["user_id"],
             title=request.form["title"],
             description=request.form["description"],
             priority=request.form.get("priority", "Low")
         )
 
-        db.session.add(new_ticket)
+        db.session.add(ticket)
         db.session.commit()
 
         return redirect("/my_tickets")
 
     return render_template("create_ticket.html")
+
+# ================= MY TICKETS =================
 
 @app.route("/my_tickets")
 def my_tickets():
@@ -120,10 +131,14 @@ def my_tickets():
     tickets = Ticket.query.filter_by(user_id=session["user_id"]).all()
     return render_template("my_tickets.html", tickets=tickets)
 
+# ================= LOGOUT =================
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
+
+# ================= ADMIN PANEL =================
 
 @app.route("/admin")
 def admin():
@@ -132,6 +147,8 @@ def admin():
 
     tickets = Ticket.query.all()
     return render_template("admin.html", tickets=tickets)
+
+# ================= UPDATE STATUS =================
 
 @app.route("/update_status/<int:id>/<status>")
 def update_status(id, status):
@@ -147,6 +164,8 @@ def update_status(id, status):
     db.session.commit()
 
     return redirect("/admin")
+
+# ================= ADMIN STATS =================
 
 @app.route("/admin_stats")
 def admin_stats():
@@ -164,6 +183,8 @@ def admin_stats():
         closed=closed
     )
 
+# ================= SEARCH =================
+
 @app.route("/search")
 def search():
     query = request.args.get("q", "")
@@ -174,8 +195,11 @@ def search():
 
     return render_template("my_tickets.html", tickets=tickets)
 
-# ---------------- START ----------------
+# ================= CREATE TABLES (LOCAL SAFE ONLY) =================
+with app.app_context():
+    db.create_all()
+
+# ================= RUN =================
 
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
