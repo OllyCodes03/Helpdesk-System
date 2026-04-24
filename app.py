@@ -13,10 +13,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# SAFE DATABASE INITIALIZATION
-with app.app_context():
-    db.create_all()
-
 # ---------------- MODELS ----------------
 
 class User(db.Model):
@@ -34,13 +30,17 @@ class Ticket(db.Model):
     status = db.Column(db.String(50), default="Open")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ---------------- HOME ----------------
+# ---------------- SAFE DB INIT ----------------
+
+def init_db():
+    with app.app_context():
+        db.create_all()
+
+# ---------------- ROUTES ----------------
 
 @app.route("/")
 def home():
     return render_template("index.html")
-
-# ---------------- REGISTER ----------------
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -51,10 +51,7 @@ def register():
         ).first()
 
         if existing_user:
-            return render_template(
-                "register.html",
-                error="Username already exists"
-            )
+            return render_template("register.html", error="Username already exists")
 
         user = User(
             username=request.form["username"],
@@ -68,8 +65,6 @@ def register():
         return redirect("/login")
 
     return render_template("register.html")
-
-# ---------------- LOGIN ----------------
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -90,16 +85,12 @@ def login():
 
     return render_template("login.html", error=error)
 
-# ---------------- DASHBOARD ----------------
-
 @app.route("/dashboard")
 def dashboard():
     if "user_id" not in session:
         return redirect("/login")
 
     return render_template("dashboard.html", username=session["username"])
-
-# ---------------- CREATE TICKET ----------------
 
 @app.route("/create_ticket", methods=["GET", "POST"])
 def create_ticket():
@@ -121,8 +112,6 @@ def create_ticket():
 
     return render_template("create_ticket.html")
 
-# ---------------- USER TICKETS ----------------
-
 @app.route("/my_tickets")
 def my_tickets():
     if "user_id" not in session:
@@ -131,14 +120,10 @@ def my_tickets():
     tickets = Ticket.query.filter_by(user_id=session["user_id"]).all()
     return render_template("my_tickets.html", tickets=tickets)
 
-# ---------------- LOGOUT ----------------
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
-
-# ---------------- ADMIN PANEL ----------------
 
 @app.route("/admin")
 def admin():
@@ -147,8 +132,6 @@ def admin():
 
     tickets = Ticket.query.all()
     return render_template("admin.html", tickets=tickets)
-
-# ---------------- UPDATE STATUS ----------------
 
 @app.route("/update_status/<int:id>/<status>")
 def update_status(id, status):
@@ -164,8 +147,6 @@ def update_status(id, status):
     db.session.commit()
 
     return redirect("/admin")
-
-# ---------------- ADMIN ANALYTICS ----------------
 
 @app.route("/admin_stats")
 def admin_stats():
@@ -183,8 +164,6 @@ def admin_stats():
         closed=closed
     )
 
-# ---------------- SEARCH ----------------
-
 @app.route("/search")
 def search():
     query = request.args.get("q", "")
@@ -195,7 +174,8 @@ def search():
 
     return render_template("my_tickets.html", tickets=tickets)
 
-# ---------------- RUN APP ----------------
+# ---------------- START ----------------
 
 if __name__ == "__main__":
+    init_db()
     app.run(debug=True)
