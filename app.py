@@ -12,8 +12,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# SAFE DATABASE INITIALIZATION
 with app.app_context():
     db.create_all()
+
 # ---------------- MODELS ----------------
 
 class User(db.Model):
@@ -184,7 +187,7 @@ def admin_stats():
 
 @app.route("/search")
 def search():
-    query = request.args.get("q")
+    query = request.args.get("q", "")
 
     tickets = Ticket.query.filter(
         Ticket.title.contains(query)
@@ -195,6 +198,4 @@ def search():
 # ---------------- RUN APP ----------------
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
