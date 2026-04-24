@@ -7,16 +7,18 @@ import os
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
-# ---------------- DATABASE CONFIG ----------------
+# ---------------- DATABASE CONFIG (POSTGRES) ----------------
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
+# Fix Render/Postgres URL format issue
+if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace(
+        "postgres://", "postgresql://"
+    )
 
-# Create tables safely
-with app.app_context():
-    db.create_all()
+db = SQLAlchemy(app)
 
 # ---------------- MODELS ----------------
 
@@ -24,7 +26,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), default="user")  # user / admin
+    role = db.Column(db.String(20), default="user")
 
 
 class Ticket(db.Model):
@@ -35,6 +37,11 @@ class Ticket(db.Model):
     priority = db.Column(db.String(20), default="Low")
     status = db.Column(db.String(50), default="Open")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# ---------------- SAFE DB INIT ----------------
+
+with app.app_context():
+    db.create_all()
 
 # ---------------- HELPER ----------------
 
@@ -107,7 +114,7 @@ def dashboard():
     return render_template("dashboard.html", username=session["username"])
 
 
-# ---------------- CREATE TICKET ----------------
+# ---------------- TICKETS ----------------
 
 @app.route("/create_ticket", methods=["GET", "POST"])
 def create_ticket():
@@ -129,8 +136,6 @@ def create_ticket():
 
     return render_template("create_ticket.html")
 
-
-# ---------------- USER TICKETS ----------------
 
 @app.route("/my_tickets")
 def my_tickets():
@@ -206,8 +211,6 @@ def admin_users():
     return render_template("admin_users.html", users=users)
 
 
-# ---------------- PROMOTE USER TO ADMIN ----------------
-
 @app.route("/make_admin/<int:user_id>")
 def make_admin(user_id):
     if not is_admin():
@@ -235,7 +238,7 @@ def search():
     return render_template("my_tickets.html", tickets=tickets)
 
 
-# ---------------- RUN APP ----------------
+# ---------------- RUN ----------------
 
 if __name__ == "__main__":
     app.run(debug=True)
