@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="/static/style.css">
+
+<nav>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/logout">Logout</a>
+</nav>
+
+<div class="container">
+
+<h2>Admin Panel</h2>
+
+{% for ticket in tickets %}
+
+<div class="card">
+
+    <h3>{{ ticket.title }}</h3>
+    <p>{{ ticket.description }}</p>
+    <p><b>Priority:</b> {{ ticket.priority }}</p>
+
+    <p><b>Status:</b>
+        {% if ticket.status == "Open" %}
+            <span style="color:white; background:red; padding:5px;">Open</span>
+
+        {% elif ticket.status == "In Progress" %}
+            <span style="color:black; background:yellow; padding:5px;">In Progress</span>
+
+        {% else %}
+            <span style="color:white; background:green; padding:5px;">Closed</span>
+        {% endif %}
+    </p>
+
+    <a href="/update_status/{{ ticket.id }}/Open">Open</a> |
+    <a href="/update_status/{{ ticket.id }}/In Progress">In Progress</a> |
+    <a href="/update_status/{{ ticket.id }}/Closed">Closed</a>
+
+</div>
+
+{% endfor %}
+
+</div>

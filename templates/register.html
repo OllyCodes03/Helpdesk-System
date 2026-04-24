@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="/static/style.css">
+
+<nav>
+    <a href="/login">Login</a>
+</nav>
+
+<div class="container">
+
+<h2>Register</h2>
+
+{% if error %}
+<p style="color:red;">{{ error }}</p>
+{% endif %}
+
+<form method="POST">
+    <input name="username" placeholder="Username" required>
+    <br><br>
+    <input name="password" type="password" placeholder="Password" required>
+    <br><br>
+    <button type="submit">Create Account</button>
+</form>
+
+</div>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="/static/style.css">
+
+<nav>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/my_tickets">My Tickets</a>
+    <a href="/logout">Logout</a>
+</nav>
+
+<div class="container">
+
+<h2>Create Ticket</h2>
+
+<form method="POST">
+
+    <input name="title" placeholder="Ticket Title" required>
+    <br><br>
+
+    <textarea name="description" placeholder="Describe your issue" required></textarea>
+    <br><br>
+
+    <select name="priority">
+        <option value="Low">Low</option>
+        <option value="Medium">Medium</option>
+        <option value="High">High</option>
+    </select>
+
+    <br><br>
+
+    <button type="submit">Submit Ticket</button>
+
+</form>
+
+</div>

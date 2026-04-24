@@ -1,0 +1,14 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<div class="sidebar">
+    <h2>IT Helpdesk</h2>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/create_ticket">Create Ticket</a>
+    <a href="/my_tickets">My Tickets</a>
+    <a href="/admin">Admin</a>
+    <a href="/logout">Logout</a>
+</div>
+
+<div class="main">
+    <h1>Welcome, {{ username }}</h1>
+</div>
