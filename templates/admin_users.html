@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="/static/style.css">
+
+<nav>
+    <a href="/admin">Admin Panel</a>
+    <a href="/admin_stats">Stats</a>
+    <a href="/logout">Logout</a>
+</nav>
+
+<div class="container">
+
+<h1>User Management</h1>
+
+{% for user in users %}
+
+<div class="card">
+    <p><b>Username:</b> {{ user.username }}</p>
+    <p><b>Role:</b> {{ user.role }}</p>
+
+    {% if user.role != "admin" %}
+        <a href="/make_admin/{{ user.id }}">
+            <button>Make Admin</button>
+        </a>
+    {% else %}
+        <span style="color: green; font-weight: bold;">Already Admin</span>
+    {% endif %}
+</div>
+
+{% endfor %}
+
+</div>
